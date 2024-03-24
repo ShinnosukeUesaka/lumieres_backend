@@ -44,7 +44,9 @@ class Item(pydantic.BaseModel):
 
 @app.post("/create_questions")
 async def create_questions(input: Item):
-    print("hi")
+    print("linkkkkkk")
+    print(input.url)
+    print("linkkkkkk")
     # search for cached questions
     cached_json = json.loads(requests.get(CACHED_GENERATION_LINK, headers={'Cache-Control': 'no-cache'}).text)
     print(cached_json)
@@ -235,7 +237,7 @@ def create_questions(transcription):
 # """
     
 
-    PROMPT = f"""You will be given a transcription of a video. Your job is to generate *two* multiple-choice questions and open-ended questions based on the transcription.
+    PROMPT = f"""You will be given a transcription of a video. Your job is to generate one multiple-choice questions and one open-ended questions based on the transcription. You need to generate one each for each of the question types.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple-choice options.
 The question should be
