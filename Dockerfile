@@ -18,6 +18,6 @@ COPY pyproject.toml ./
 #RUN poetry install --without dev
 RUN poetry install --no-root
 
-COPY ./lumineres ./lumineres
+COPY ./ ./
 
 CMD ["uvicorn", "lumineres.main:app", "--host", "0.0.0.0", "--port", "8080"]

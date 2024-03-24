@@ -202,16 +202,6 @@ Transcription"
         except:
             raise Exception("Error converting string to json")
     
-    # save json as a file
-    with open("questions.json", "w") as f:
-        json.dump(json_response, f)
-    
-    # load json from file
-    with open("transcription.pkl", "rb") as f:
-        transcription = pickle.load(f)
-    
-    with open("questions.json", "r") as f:
-        json_response = json.load(f)
         
     final_questions = []
     for question in json_response["questions"]:
