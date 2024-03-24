@@ -19,8 +19,18 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import traceback
 import pydantic 
+from starlette.middleware.cors import CORSMiddleware
+
 
 app = fastapi.FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 api_key = os.environ["MISTRAL_API_KEY"]
 model = "mistral-large-latest"
