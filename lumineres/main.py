@@ -1,3 +1,6 @@
+import dotenv
+dotenv.load_dotenv('lumineres/.env')
+
 from pytube import YouTube
 from openai import OpenAI
 from pydub import AudioSegment
@@ -12,7 +15,10 @@ import elevenlabs
 import cv2
 import replicate
 import uuid
-
+from concurrent.futures import ThreadPoolExecutor
+import time
+import traceback
+import pydantic 
 
 app = fastapi.FastAPI()
 
@@ -21,9 +27,13 @@ model = "mistral-large-latest"
 client = OpenAI()
 
 
+class Item(pydantic.BaseModel):
+    url: str
+    max_questions: int = 2
+
 @app.post("/create_questions")
-async def create_questions(url: str):
-    return create_questions(url)
+async def create_questions(input: Item):
+    return {'questions': process_url(input.url, input.max_questions)}
 
 def find_best_matching_section(sentence, transcript):
     sentence_words = sentence.split()
@@ -76,27 +86,6 @@ def clone_audio(audio_path) -> str:
     )
 
     return voice
-
-    
-    
-def create_video_from_text(face_image_path: str, text: str, voice_id: str):
-    audio_client = ElevenLabs()
-    audio = audio_client.generate(text=text, voice=voice_id)
-    audio_file_name =  f"{uuid.uuid4().hex}.mp3"
-    elevenlabs.save(audio, audio_file_name)
-    image = open(face_image_path, "rb")
-    audio = open(audio_file_name, "rb")
-    input = {
-        "driven_audio": audio,
-        "source_image": image,
-        "enhancer": "RestoreFormer"
-    }
-    
-    output = replicate.run(
-        "lucataco/sadtalker:85c698db7c0a66d5011435d0191db323034e1da04b912a6d365833141b6a285b",
-        input=input
-    )
-    return output
 
 
 
@@ -175,7 +164,7 @@ def create_questions(transcription):
     client = MistralClient(api_key=api_key)
     
 
-    PROMPT = f"""This is a transcription of an video. Your job is to generate *three* multiple choice questoins and openended questions based on the transcription.
+    PROMPT = f"""This is a transcription of an video. Your job is to generate *two* multiple choice questoins and openended questions based on the transcription.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple choice options.
 Example of your json response
@@ -243,8 +232,55 @@ Transcription"
     return final_questions
 
 
+    
+    
+def create_video_from_text(face_image_path: str, text: str, voice_id: str):
+    audio_client = ElevenLabs()
+    audio = audio_client.generate(text=text, voice=voice_id)
+    audio_file_name =  f"{uuid.uuid4().hex}.mp3"
+    elevenlabs.save(audio, audio_file_name)
+    image = open(face_image_path, "rb")
+    audio = open(audio_file_name, "rb")
+    input = {
+        "driven_audio": audio,
+        "source_image": image,
+        "enhancer": "RestoreFormer"
+    }
+    
+    output = replicate.run(
+        "lucataco/sadtalker:85c698db7c0a66d5011435d0191db323034e1da04b912a6d365833141b6a285b",
+        input=input
+    )
+    return output
 
-def do_everything(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g"):
+
+def create_videos(face_image_path, script, voice_id):
+    return create_video_from_text(face_image_path, script, voice_id)
+
+def create_videos_for_question(index, question, face_image_path, voice_id):
+    results = {}
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            'question_video': executor.submit(create_videos, face_image_path, question["question"]["question_script"], voice_id),
+            'correct_answer_video': executor.submit(create_videos, face_image_path, question["question"]["correct_answer_script"], voice_id),
+            'wrong_answer_video': executor.submit(create_videos, face_image_path, question["question"]["incorrect_answer_script"], voice_id)
+        }
+
+        for key, future in futures.items():
+            try:
+                results[key] = future.result()  # This blocks until the future is done
+            except Exception as e:
+                print(f"An error occurred in {key} for question index {index}: {e}")
+                traceback.print_exc()  # This prints the traceback of the error
+
+    return (index, {
+        "question_video_url": results.get('question_video', 'Error'),
+        "correct_answer_video_url": results.get('correct_answer_video', 'Error'),
+        "wrong_answer_video_url": results.get('wrong_answer_video', 'Error')
+    })
+
+
+def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_questions=2):
     face_image_path = "face.png"
     audio_file_path = "audio.mp3"
     transcription = save_audio_get_transcription(url, audio_file_path)
@@ -252,24 +288,24 @@ def do_everything(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g"):
     print(f"voice_id: {voice_id}")
     questions = create_questions(transcription)
     print(questions)
+    
+    # limit the number of questions 
+    questions = questions[:max_questions]
+    
     get_face_image(url, output_path="face.png")
     
-    for index, question in enumerate(questions):
-        question_video_url = create_video_from_text(face_image_path, question["question"]["question_script"], voice_id)
-        correct_answer_video_url = create_video_from_text(face_image_path, question["question"]["correct_answer_script"], voice_id)
-        wrong_answer_video_url = create_video_from_text(face_image_path, question["question"]["incorrect_answer_script"], voice_id)
-        questions[index]["question"] = {
-            **question["question"],
-            "question_video_url": question_video_url,
-            "correct_answer_video_url": correct_answer_video_url,
-            "wrong_answer_video_url": wrong_answer_video_url
-            
-        }
-        print(questions[index])
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # Launch parallel tasks for each question
+        futures = [executor.submit(create_videos_for_question, index, question, face_image_path, voice_id) for index, question in enumerate(questions)]
+
+        # Wait for all tasks to complete and update the questions list
+        for future in futures:
+            index, video_urls = future.result()
+            questions[index]["question"].update(video_urls)
 
     return questions
         
 
 if __name__ == "__main__":
-    print(do_everything())
+    print(process_url())
     
