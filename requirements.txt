@@ -1,0 +1,11 @@
+fastapi==0.110.0
+pytube==15.0.0
+openai==1.14.2
+pydub==0.25.1
+mistralai==0.1.6
+opencv-python==4.9.0.80
+replicate==0.25.1
+requests==2.31.0
+elevenlabs==1.0.0
+python-dotenv==1.0.1
+uvicorn==0.29.0
