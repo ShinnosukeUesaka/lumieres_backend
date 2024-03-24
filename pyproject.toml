@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "lumieres-backend"
+version = "0.1.0"
+description = ""
+authors = ["ShinnosukeUesaka <shinnosuke.uesaka@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.110.0"
+pytube = "^15.0.0"
+openai = "^1.14.2"
+pydub = "^0.25.1"
+mistralai = "^0.1.6"
+opencv-python = "^4.9.0.80"
+replicate = "^0.25.1"
+requests = "^2.31.0"
+elevenlabs = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,15 @@
+{
+    "questions": [
+        {
+            "question": "What is the best French cheese?",
+            "choices": [
+                "Brie",
+                "Camembert",
+                "Roquefort",
+                "Mimolette"
+            ],
+            "answer": "Roquefort",
+            "sentence_in_transcription_before_asking": "That concludes the section on French cheese. Now let's move on to the next topic."
+        }
+    ]
+}
