@@ -35,6 +35,11 @@ class Item(pydantic.BaseModel):
 async def create_questions(input: Item):
     return {'questions': process_url(input.url, input.max_questions)}
 
+@app.post("/demo/create_questions")
+async def dmeo_create_questions(input: Item):
+    return {'questions': [{'question': {'type': 'multiple_choice', 'question': 'What is a large language model according to the speaker?', 'options': ['A single file', 'Two files', 'A web interface', 'A GPU cluster'], 'answer': 'Two files'}, 'timestamp': 50.619998931884766}, {'question': {'type': 'multiple_choice', 'question': 'What makes the LLAMA2 70b model popular?', 'options': ['It is the most powerful closed weights model', 'It is the most powerful open weights model', 'It is the fastest model', 'It is the most expensive model'], 'answer': 'It is the most powerful open weights model'}, 'timestamp': 67.19999694824219}, {'question': {'type': 'multiple_choice', 'question': 'What is required to run the LLAMA2 70b model?', 'options': ['Parameters file and a run file', 'A web interface', 'A GPU cluster', 'An internet connection'], 'answer': 'Parameters file and a run file'}, 'timestamp': 108.81999969482422}, {'question': {'type': 'multiple_choice', 'question': 'What does the run file do in the context of the LLAMA2 70b model?', 'options': ['It stores the parameters of the neural network', 'It runs the neural network', 'It collects text from the internet', 'It performs lossy compression'], 'answer': 'It runs the neural network'}, 'timestamp': 136.16000366210938}, {'question': {'type': 'multiple_choice', 'question': 'What is the main task of the neural network in the LLAMA2 70b model?', 'options': ['Predict the next word in a sequence', 'Generate a poem', 'Translate languages', 'Summarize text'], 'answer': 'Predict the next word in a sequence'}, 'timestamp': 425.32000732421875}]}
+
+
 def find_best_matching_section(sentence, transcript):
     sentence_words = sentence.split()
     best_match_end_timestamp = None
