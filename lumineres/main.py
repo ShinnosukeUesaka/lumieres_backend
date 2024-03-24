@@ -42,6 +42,12 @@ class Item(pydantic.BaseModel):
     url: str
     max_questions: int = 2
 
+class Item2(pydantic.BaseModel):
+    question: str
+    answer: str
+
+
+
 @app.post("/create_questions")
 async def create_questions(input: Item):
     print("hi")
@@ -54,6 +60,26 @@ async def create_questions(input: Item):
             return {'questions': item["questions"]}
     
     return {'questions': process_url(input.url, input.max_questions)}
+
+@app.post("/give_feedback")
+def give_feedback(input: Item2):
+    client = MistralClient(api_key=api_key)
+    
+    prompt = f'''You are giving the feedback for a user that responsed a question regarding an education video. Your objective is to create a feedback for the answer that the user will give you. For context, I will give you the question too. Be precise in your feedback. If the user got the answer wrong say it, do NOT try to be nice.
+QUESTION: 
+{input.question} 
+USER ANSWER:
+{input.answer}'''
+    messages = [
+        ChatMessage(role="user", content=prompt)
+    ]
+
+    chat_response = client.chat(
+        model=model,
+        messages=messages,
+    )
+    feedback = chat_response.choices[0].message.content
+    return feedback
 
 @app.post("/demo/create_questions")
 async def dmeo_create_questions(input: Item):
@@ -372,7 +398,6 @@ def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_qu
 
     return questions
         
-
 if __name__ == "__main__":
     print(process_url())
     
