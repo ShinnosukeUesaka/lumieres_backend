@@ -20,7 +20,7 @@ import time
 import traceback
 import pydantic 
 from starlette.middleware.cors import CORSMiddleware
-
+import requests
 
 app = fastapi.FastAPI()
 
@@ -36,6 +36,7 @@ api_key = os.environ["MISTRAL_API_KEY"]
 model = "mistral-large-latest"
 client = OpenAI()
 
+CACHED_GENERATION_LINK = "https://raw.githubusercontent.com/ShinnosukeUesaka/lumieres_backend/main/cached_generations.json"
 
 class Item(pydantic.BaseModel):
     url: str
@@ -43,6 +44,15 @@ class Item(pydantic.BaseModel):
 
 @app.post("/create_questions")
 async def create_questions(input: Item):
+    print("hi")
+    # search for cached questions
+    cached_json = json.loads(requests.get(CACHED_GENERATION_LINK, headers={'Cache-Control': 'no-cache'}).text)
+    print(cached_json)
+    
+    for item in cached_json["cached_generations"]:
+        if item["url"] == input.url:
+            return {'questions': item["questions"]}
+    
     return {'questions': process_url(input.url, input.max_questions)}
 
 @app.post("/demo/create_questions")
@@ -70,6 +80,36 @@ def find_best_matching_section(sentence, transcript):
     return best_match_end_timestamp
 
 
+def create_completion(prompt, model="mistral-large-latest"):
+    client = MistralClient(api_key=api_key)
+    
+    messages = [
+        ChatMessage(role="user", content=prompt)
+    ]
+
+    chat_response = client.chat(
+        model=model,
+        response_format={"type": "json_object"},
+        messages=messages,
+    )
+
+    # convert string to json
+    try:
+        json_response = json.loads(chat_response.choices[0].message.content)
+    except:
+        print("Error converting string to json")
+        # try again
+        chat_response = client.chat(
+            model=model,
+            response_format={"type": "json_object"},
+            messages=messages,
+        )
+        try:
+            json_response = json.loads(chat_response.choices[0].message.content)
+        except:
+            raise Exception("Error converting string to json")
+    return json_response
+        
 
 EXAMPLE_JSON = """{
     "questions": [
@@ -84,7 +124,7 @@ EXAMPLE_JSON = """{
             "answer": "Roquefort",
             "question_script": "What is the best French cheese?",
             "correct_answer_script": "You got it! The best French cheese is Roquefort.",
-            "incorrect_answer_script": "Actually, the best French cheese is Roquefort. Roquefort is a sheep's milk cheese from the south of France. It has a tangy, salty flavor and a creamy texture. It's often crumbled over salads or melted into sauces. Try it next time you're at the cheese counter!",
+            "incorrect_answer_script": "Close! Actually, the best French cheese is Roquefort. Roquefort is a sheep's milk cheese from the south of France. It has a tangy, salty flavor and a creamy texture.",
             "sentence_in_transcription_before_asking": "That concludes the section on French cheese. Now let's move on to the next topic."
         }
     ]
@@ -101,7 +141,6 @@ def clone_audio(audio_path) -> str:
     )
 
     return voice
-
 
 
 def get_face_image(url, output_path="face.png"):
@@ -122,9 +161,7 @@ def get_face_image(url, output_path="face.png"):
     # Calculate the number of frames in the first minute
     frames_in_minute = fps * 60
 
-
-
-    video.set(cv2.CAP_PROP_POS_MSEC, 20000)
+    video.set(cv2.CAP_PROP_POS_MSEC, 20000) # skip to 20 seconds
     ret, first_frame = video.read()
 
     # Convert the first frame to grayscale
@@ -176,47 +213,37 @@ def create_questions(transcription):
   
     text = transcription.text
     
-    client = MistralClient(api_key=api_key)
+    
+    
+#     SEGMENT_TEXT_EXAMPLE_JSON = """{
+# "sections": [
+#     "title": "Introduction",
+#     "transcription": "the whole transcription word to word here",    
+# ]
+# }"""
+
+#     SEGMENT_TEXT_PROMPT = f"""You will be given a transcription of an educational video. Split the transcription into segments based on the content of the video. Each segment should be about 400-1000 words, a coherent section of the video that can be used to generate questions. 
+# Your response must be in json.
+# {SEGMENT_TEXT_EXAMPLE_JSON}
+# """
     
 
-    PROMPT = f"""This is a transcription of an video. Your job is to generate *two* multiple choice questoins and openended questions based on the transcription.
+    PROMPT = f"""You will be given a transcription of an video. Your job is to generate *two* multiple choice questoins and openended questions based on the transcription.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple choice options.
+The question should be
+- based on the content of the video
+- is a key point in the video
+- thought provoking
+
 Example of your json response
 {EXAMPLE_JSON}
 
 Transcription"
 {text}
 """
-
-    messages = [
-        ChatMessage(role="user", content=PROMPT)
-    ]
-
-    chat_response = client.chat(
-        model=model,
-        response_format={"type": "json_object"},
-        messages=messages,
-    )
-
-    print(chat_response.choices[0].message.content)
-    # convert string to json
-    try:
-        json_response = json.loads(chat_response.choices[0].message.content)
-    except:
-        print("Error converting string to json")
-        print(chat_response.choices[0].message.content)
-        # try again
-        chat_response = client.chat(
-            model=model,
-            response_format={"type": "json_object"},
-            messages=messages,
-        )
-        try:
-            json_response = json.loads(chat_response.choices[0].message.content)
-        except:
-            raise Exception("Error converting string to json")
     
+    json_response = create_completion(PROMPT)
         
     final_questions = []
     for question in json_response["questions"]:
@@ -233,6 +260,7 @@ Transcription"
             },
             "timestamp": timestamp
         })
+    print(final_questions)
     
     return final_questions
 
@@ -320,4 +348,5 @@ def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_qu
 
 if __name__ == "__main__":
     print(process_url())
+    
     
