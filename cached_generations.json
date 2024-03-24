@@ -26,6 +26,15 @@
                 },
                 {
                     "question": {
+                    "type": "free_answer",
+                    "question": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
+                    "question_script": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
+                    "question_video_url": "https://replicate.delivery/pbxt/0qUj2aFeLTSOa61PifHybKdILOxtDoGSmCxMArRxi61qChjSA/out.mp4"
+                    },
+                    "timestamp": 240.3800048828125
+                },
+                {
+                    "question": {
                         "type": "multiple_choice",
                         "question": "What is the main task performed by the LLAMA2 70b large language model?",
                         "options": [
@@ -43,15 +52,6 @@
                         "wrong_answer_video_url": "https://replicate.delivery/pbxt/RKyRkfrE73UvBimJSAoGQlJuvTtztHvbyFOGvIoneKDzFXjSA/out.mp4"
                     },
                     "timestamp": 425.32000732421875
-                },
-                {
-                    "question": {
-                    "type": "free_answer",
-                    "question": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
-                    "question_script": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
-                    "question_video_url": "https://replicate.delivery/pbxt/0qUj2aFeLTSOa61PifHybKdILOxtDoGSmCxMArRxi61qChjSA/out.mp4"
-                    },
-                    "timestamp": 240.3800048828125
                 }
             ]
         }
