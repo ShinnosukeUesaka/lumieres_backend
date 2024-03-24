@@ -21,6 +21,9 @@ import traceback
 import pydantic 
 from starlette.middleware.cors import CORSMiddleware
 import requests
+import face_recognition
+from PIL import Image
+ 
 
 app = fastapi.FastAPI()
 
@@ -199,6 +202,68 @@ def get_face_image(url, output_path="face.png"):
     video.release()
     return output_path
 
+def get_face_image2(url, output_path="face.png", max_retries=5, resize_ratio=1.5):
+    print("Getting face image from video...")
+
+    # Download the video from YouTube
+    YouTube(url).streams.get_highest_resolution().download(filename='video.mp4')
+    
+    # Open the downloaded video file
+    video = cv2.VideoCapture('video.mp4')
+
+    success = False  # Flag to check if face has been successfully captured
+    attempts = 0  # Count of attempts made to find a face
+
+    while not success and attempts < max_retries:
+        # Seek to the (attempts * 10) seconds position in the video
+        video.set(cv2.CAP_PROP_POS_MSEC, attempts * 10000)
+        ret, frame = video.read()
+
+        if not ret:
+            break  # Exit the loop if no frame is read
+
+        # Convert the frame to RGB as face_recognition uses RGB
+        rgb_frame = frame[:, :, ::-1]
+
+        # Find all the faces in the frame
+        face_locations = face_recognition.face_locations(rgb_frame)
+
+        if face_locations:
+            # Assuming the first face detected is the one we want
+            top, right, bottom, left = face_locations[0]
+            
+            # Apply the resize ratio to make the detected face region bigger
+            width = right - left
+            height = bottom - top
+            new_width = width * resize_ratio
+            new_height = height * resize_ratio
+            left = max(0, left - (new_width - width) // 2)
+            top = max(0, top - (new_height - height) // 2)
+            right = left + new_width
+            bottom = top + new_height
+            
+            # Make sure the new coordinates do not exceed image dimensions
+            height, width, _ = rgb_frame.shape
+            right, bottom = min(width, right), min(height, bottom)
+
+            face_image = rgb_frame[int(top):int(bottom), int(left):int(right)]
+            pil_image = Image.fromarray(face_image)
+
+            # Save the extracted face
+            pil_image.save(output_path)
+            print(f"Face image saved to {output_path}")
+            success = True  # Update flag to indicate success
+        else:
+            print(f"No faces found in the frame at {attempts * 10} seconds.")
+            attempts += 1  # Increment attempt counter
+
+    if not success:
+        print("Failed to find a face after the maximum number of retries.")
+
+    # Release the video file
+    video.release()
+
+
 def save_audio_get_transcription(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", audio_file_path="audio.mp3"):
     print("creating transcription")
     # downalod audio and save it to audio.mp3
@@ -359,7 +424,7 @@ def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_qu
     # limit the number of questions 
     questions = questions[:max_questions]
     
-    get_face_image(url, output_path="face.png")
+    get_face_image2(url, output_path="face.png")
     
     with ThreadPoolExecutor(max_workers=5) as executor:
         # Launch parallel tasks for each question
@@ -376,6 +441,6 @@ def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_qu
         
 
 if __name__ == "__main__":
-    print(process_url())
+    get_face_image2("https://www.youtube.com/watch?v=zjkBMFhNj_g", output_path="face.png")
     
     
