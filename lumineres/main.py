@@ -11,6 +11,7 @@ from elevenlabs.client import ElevenLabs
 import elevenlabs
 import cv2
 import replicate
+import uuid
 
 
 app = fastapi.FastAPI()
@@ -65,21 +66,23 @@ EXAMPLE_JSON = """{
 }"""
 
 def clone_audio(audio_path) -> str:
-    client = ElevenLabs(
-    )
+    print("cloning voice")
+    audio_client = ElevenLabs()
 
-    voice = client.clone(
-        name="Alex",
+    voice = audio_client.clone(
+        name=uuid.uuid4().hex,
+        description="An american male voice",
         files=[audio_path],
     )
 
-    return
+    return voice
 
     
     
 def create_video_from_text(face_image_path: str, text: str, voice_id: str):
-    audio = client.generate(text=text, voice=voice_id)
-    audio_file_name =  f"{text}.mp3"
+    audio_client = ElevenLabs()
+    audio = audio_client.generate(text=text, voice=voice_id)
+    audio_file_name =  f"{uuid.uuid4().hex}.mp3"
     elevenlabs.save(audio, audio_file_name)
     image = open(face_image_path, "rb")
     audio = open(audio_file_name, "rb")
@@ -172,7 +175,7 @@ def create_questions(transcription):
     client = MistralClient(api_key=api_key)
     
 
-    PROMPT = f"""This is a transcription of an video. Your job is to generate multiple choice questoins and openended questions based on the transcription.
+    PROMPT = f"""This is a transcription of an video. Your job is to generate *three* multiple choice questoins and openended questions based on the transcription.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple choice options.
 Example of your json response
@@ -183,7 +186,7 @@ Transcription"
 """
 
     messages = [
-    ChatMessage(role="user", content=PROMPT)
+        ChatMessage(role="user", content=PROMPT)
     ]
 
     chat_response = client.chat(
@@ -220,9 +223,7 @@ Transcription"
     
     with open("questions.json", "r") as f:
         json_response = json.load(f)
-    print(json_response)
-    print(transcription)
-    print(json_response["questions"][0]["sentence_in_transcription_before_asking"])
+        
     final_questions = []
     for question in json_response["questions"]:
         timestamp = find_best_matching_section(question["sentence_in_transcription_before_asking"], transcription.words)
@@ -247,16 +248,18 @@ def do_everything(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g"):
     face_image_path = "face.png"
     audio_file_path = "audio.mp3"
     transcription = save_audio_get_transcription(url, audio_file_path)
+    voice_id = clone_audio(audio_file_path)
+    print(f"voice_id: {voice_id}")
     questions = create_questions(transcription)
-    voice_id = clone_audio(face_image_path)
+    print(questions)
     get_face_image(url, output_path="face.png")
     
     for index, question in enumerate(questions):
-        question_video_url = create_video_from_text(face_image_path, question["question_script"], voice_id)
-        correct_answer_video_url = create_video_from_text(face_image_path, question["correct_answer_script"], voice_id)
-        wrong_answer_video_url = create_video_from_text(face_image_path, question["incorrect_answer_script"], voice_id)
-        questions[index] = {
-            **question,
+        question_video_url = create_video_from_text(face_image_path, question["question"]["question_script"], voice_id)
+        correct_answer_video_url = create_video_from_text(face_image_path, question["question"]["correct_answer_script"], voice_id)
+        wrong_answer_video_url = create_video_from_text(face_image_path, question["question"]["incorrect_answer_script"], voice_id)
+        questions[index]["question"] = {
+            **question["question"],
             "question_video_url": question_video_url,
             "correct_answer_video_url": correct_answer_video_url,
             "wrong_answer_video_url": wrong_answer_video_url
