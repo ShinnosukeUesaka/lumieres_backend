@@ -1,6 +1,32 @@
 {
     "cached_generations": [
         {
+            "title": "MIT Classical Mechanics Lecture",
+            "url": "https://www.youtube.com/watch?v=EHCACV8rdig",
+            "questions": [
+                {
+                    "question": {
+                        "type": "multiple_choice",
+                        "question": "What is the relationship between potential energy and conservative force according to the fundamental theorem of calculus?",
+                        "options": [
+                            "The potential energy difference is the integral of the force with the minus sign",
+                            "The potential energy difference is the derivative of the force with respect to time",
+                            "The potential energy difference is the product of the force and the distance",
+                            "The potential energy difference is the quotient of the force and the mass"
+                        ],
+                        "answer": "The potential energy difference is the integral of the force with the minus sign",
+                        "question_script": "What is the relationship between potential energy and conservative force according to the fundamental theorem of calculus?",
+                        "correct_answer_script": "Excellent! According to the fundamental theorem of calculus, the potential energy difference is the integral of the force with the minus sign.",
+                        "incorrect_answer_script": "Not quite! The correct answer is that the potential energy difference is the integral of the force with the minus sign. This is a key point in understanding how potential energy and conservative force are related.",
+                        "question_video_url": "https://replicate.delivery/pbxt/6D9o3Yfgzell4EiWssPejk0X8rf53qkUAVJpfoe7heUiWWwRJA/out.mp4",
+                        "correct_answer_video_url": "https://replicate.delivery/pbxt/ZrWyTal4RWpqAFrLYUErDcND4KXcp4J8JpnP5bQ4rhgdL4oE/out.mp4",
+                        "wrong_answer_video_url": "https://replicate.delivery/pbxt/y005lk32lv6GJN9RCpBpum6dELe3JnqlzNJAJSn1wriCXwRJA/out.mp4"
+                    },
+                    "timestamp": 46.099998474121094
+                }
+            ]
+        },
+        {
             "title": "Intro to Large Language Models",
             "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g",
             "questions": [
