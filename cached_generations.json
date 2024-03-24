@@ -45,6 +45,21 @@
                     "timestamp": 425.32000732421875
                 }
             ]
+        },
+        {
+            "title": "Intro to Large Language Models (Free answer debug)",
+            "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g",
+            "questions": [
+                {
+                    "question": {
+                    "type": "free_answer",
+                    "question": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
+                    "question_script": "What is the process of obtaining the parameters for a large language model, such as the LLAMA2 70b model?",
+                    "question_video_url": "https://replicate.delivery/pbxt/0qUj2aFeLTSOa61PifHybKdILOxtDoGSmCxMArRxi61qChjSA/out.mp4"
+                    },
+                    "timestamp": 240.3800048828125
+                }
+            ]
         }
     ]
     
