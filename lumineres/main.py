@@ -251,6 +251,10 @@ def create_video_from_text(face_image_path: str, text: str, voice_id: str):
         "lucataco/sadtalker:85c698db7c0a66d5011435d0191db323034e1da04b912a6d365833141b6a285b",
         input=input
     )
+    
+    # remove audio 
+    os.remove(audio_file_name)
+    
     return output
 
 
@@ -302,6 +306,8 @@ def process_url(url: str = "https://www.youtube.com/watch?v=zjkBMFhNj_g", max_qu
         for future in futures:
             index, video_urls = future.result()
             questions[index]["question"].update(video_urls)
+    os.remove("audio.mp3")
+    os.remove("face.png")
 
     return questions
         
