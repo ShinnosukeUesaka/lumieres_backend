@@ -1,5 +1,5 @@
 import dotenv
-dotenv.load_dotenv('lumineres/.env')
+dotenv.load_dotenv('.env')
 
 from pytube import YouTube
 from openai import OpenAI
@@ -114,6 +114,7 @@ def create_completion(prompt, model="mistral-large-latest"):
 EXAMPLE_JSON = """{
     "questions": [
         {
+            "type": "multiple_choise",
             "question": "What is the best French cheese?",
             "choices": [
                 "Brie",
@@ -126,7 +127,13 @@ EXAMPLE_JSON = """{
             "correct_answer_script": "You got it! The best French cheese is Roquefort.",
             "incorrect_answer_script": "Close! Actually, the best French cheese is Roquefort. Roquefort is a sheep's milk cheese from the south of France. It has a tangy, salty flavor and a creamy texture.",
             "sentence_in_transcription_before_asking": "That concludes the section on French cheese. Now let's move on to the next topic."
-        }
+        }, 
+       {
+            "type": "free_answer",
+            "question": "What is the best French cheese?",
+            "question_script": "What is the best French cheese?",
+            "sentence_in_transcription_before_asking": "That concludes the section on French cheese. Now let's move on to the next topic."
+        }, 
     ]
 }"""
 
@@ -228,7 +235,7 @@ def create_questions(transcription):
 # """
     
 
-    PROMPT = f"""You will be given a transcription of an video. Your job is to generate *two* multiple choice questoins and openended questions based on the transcription.
+    PROMPT = f"""You will be given a transcription of an video. Your job is to generate *one* multiple choice questoins and openended questions based on the transcription.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple choice options.
 The question should be
@@ -248,18 +255,28 @@ Transcription"
     final_questions = []
     for question in json_response["questions"]:
         timestamp = find_best_matching_section(question["sentence_in_transcription_before_asking"], transcription.words)
-        final_questions.append({
-            "question": {
-                "type": "multiple_choice",
-                "question": question["question"],
-                "options": question["choices"],
-                "answer": question["answer"],
-                "question_script": question["question_script"],
-                "correct_answer_script": question["correct_answer_script"],
-                "incorrect_answer_script": question["incorrect_answer_script"]
-            },
-            "timestamp": timestamp
-        })
+        if question["type"] == "multiple_choice": 
+            final_questions.append({
+                "question": {
+                    "type": question["type"],
+                    "question": question["question"],
+                    "options": question["choices"],
+                    "answer": question["answer"],
+                    "question_script": question["question_script"],
+                    "correct_answer_script": question["correct_answer_script"],
+                    "incorrect_answer_script": question["incorrect_answer_script"]
+                },
+                "timestamp": timestamp
+            })
+        else: 
+            final_questions.append({
+                "question": {
+                   "type": question["type"],
+                   "question": question["question"], 
+                   "question_script": question["question_script"], 
+                },
+                "timestamp": timestamp
+            })
     print(final_questions)
     
     return final_questions
@@ -298,11 +315,16 @@ def create_videos_for_question(index, question, face_image_path, voice_id):
     
     results = {}
     with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = {
-            'question_video': executor.submit(create_videos, face_image_path, question["question"]["question_script"], voice_id),
-            'correct_answer_video': executor.submit(create_videos, face_image_path, question["question"]["correct_answer_script"], voice_id),
-            'wrong_answer_video': executor.submit(create_videos, face_image_path, question["question"]["incorrect_answer_script"], voice_id)
-        }
+        if question["question"]["type"] == "multiple_choice":
+            futures = {
+                'question_video': executor.submit(create_videos, face_image_path, question["question"]["question_script"], voice_id),
+                'correct_answer_video': executor.submit(create_videos, face_image_path, question["question"]["correct_answer_script"], voice_id),
+                'wrong_answer_video': executor.submit(create_videos, face_image_path, question["question"]["incorrect_answer_script"], voice_id)
+            }
+        else: 
+           futures = {
+              "question_video": executor.submit(create_videos, face_image_path, question["question"]["question_script"], voice_id),
+           } 
 
         for key, future in futures.items():
             try:
@@ -311,10 +333,15 @@ def create_videos_for_question(index, question, face_image_path, voice_id):
                 print(f"An error occurred in {key} for question index {index}: {e}")
                 traceback.print_exc()  # This prints the traceback of the error
 
-    return (index, {
+    if question["question"]["type"] == "multiple_choice": 
+        return (index, {
         "question_video_url": results.get('question_video', 'Error'),
         "correct_answer_video_url": results.get('correct_answer_video', 'Error'),
         "wrong_answer_video_url": results.get('wrong_answer_video', 'Error')
+    })
+    else: 
+        return (index, {
+        "question_video_url": results.get('question_video', 'Error'),
     })
 
 
