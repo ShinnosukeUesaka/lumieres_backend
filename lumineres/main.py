@@ -235,15 +235,15 @@ def create_questions(transcription):
 # """
     
 
-    PROMPT = f"""You will be given a transcription of an video. Your job is to generate *one* multiple choice questoins and openended questions based on the transcription.
+    PROMPT = f"""You will be given a transcription of a video. Your job is to generate *two* multiple-choice questions and open-ended questions based on the transcription.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
-The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple choice options.
+The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple-choice options.
 The question should be
 - based on the content of the video
 - is a key point in the video
-- thought provoking
+- thought-provoking
 
-Example of your json response
+Example of your JSON response
 {EXAMPLE_JSON}
 
 Transcription"
