@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED True \
 
 RUN apt-get update && apt-get install -y curl poppler-utils git openssh-client
 
-WORKDIR $APP_HOME
+WORKDIR /app
 
 ENV PATH="/root/.local/bin:$PATH"
 RUN curl -sSL https://install.python-poetry.org | python3 -  && poetry config virtualenvs.create false

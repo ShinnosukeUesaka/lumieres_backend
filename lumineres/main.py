@@ -45,6 +45,10 @@ class Item(pydantic.BaseModel):
     url: str
     max_questions: int = 2
 
+class Item2(pydantic.BaseModel):
+    question: str
+    answer: str
+    
 @app.post("/create_questions")
 async def create_questions(input: Item):
     print("linkkkkkk")
@@ -59,6 +63,27 @@ async def create_questions(input: Item):
             return {'questions': item["questions"]}
     
     return {'questions': process_url(input.url, input.max_questions)}
+
+
+@app.post("/give_feedback")
+def give_feedback(input: Item2):
+    client = MistralClient(api_key=api_key)
+    
+    prompt = f'''You are giving the feedback for a user that responsed a question regarding an education video. Your objective is to create a feedback for the answer that the user will give you. For context, I will give you the question too. Be precise in your feedback. If the user got the answer wrong say it, do NOT try to be nice.
+QUESTION: 
+{input.question} 
+USER ANSWER:
+{input.answer}'''
+    messages = [
+        ChatMessage(role="user", content=prompt)
+    ]
+
+    chat_response = client.chat(
+        model=model,
+        messages=messages,
+    )
+    feedback = chat_response.choices[0].message.content
+    return feedback
 
 @app.post("/demo/create_questions")
 async def dmeo_create_questions(input: Item):
@@ -302,7 +327,7 @@ def create_questions(transcription):
 # """
     
 
-    PROMPT = f"""You will be given a transcription of a video. Your job is to generate one multiple-choice questions and one open-ended questions based on the transcription. You need to generate one each for each of the question types.
+    PROMPT = f"""You will be given a transcription of a video. Your job is to generate one multiple-choice questions and one open-ended questions based on the transcription. The first one must be multiple choice and the second one must be open ended.
 The question will be shown to the user as they watch the video. The question should be displayed to the user at the end of each section of the video.
 The script will be read aloud, try to mimic the tone and style of the script. The answer to the question should be one of the multiple-choice options.
 The question should be
@@ -364,10 +389,18 @@ def create_video_from_text(face_image_path: str, text: str, voice_id: str):
         "enhancer": "RestoreFormer"
     }
     
-    output = replicate.run(
-        "lucataco/sadtalker:85c698db7c0a66d5011435d0191db323034e1da04b912a6d365833141b6a285b",
+    # output = replicate.run(
+    #     "lucataco/sadtalker:85c698db7c0a66d5011435d0191db323034e1da04b912a6d365833141b6a285b",
+    #     input=input
+    # )
+    
+    deployment = replicate.deployments.get("shinnosukeuesaka/for-demo")
+    prediction = deployment.predictions.create(
         input=input
     )
+    prediction.wait()
+    
+    output = prediction.output
     
     # remove audio 
     os.remove(audio_file_name)
