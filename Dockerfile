@@ -6,7 +6,8 @@ ENV PYTHONUNBUFFERED True \
 
 
 
-RUN apt-get update && apt-get install -y curl poppler-utils git openssh-client
+RUN apt-get update && apt-get install -y curl poppler-utils git openssh-client libgl1-mesa-glx libglib2.0-0
+
 
 WORKDIR /app
 
