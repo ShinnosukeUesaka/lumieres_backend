@@ -1,0 +1,67 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'dev' || github.ref_name == 'main'
+    env:
+      IMAGE_NAME: project_name  ### change here
+      SOURCE_FOLDER_NAME: project_name ## change here
+      GCP_PROJECT_ID: genote-415220
+      ARTIFACT_REGISTRY_REGION: asia-northeast1-docker.pkg.dev
+      CLOUD_RUN_REGION: asia-northeast1
+    steps:
+      - name: Set environment variables
+        run: |
+          if [[ "${{ github.ref }}" == 'refs/heads/dev' ]]; then
+            echo "PROJECT_ID=${GCP_PROJECT_ID}" >> $GITHUB_ENV
+            echo "GCP_SA_KEY=${{ secrets.GCP_SA_KEY }}"
+            echo "AR_REPO_NAME=dev-${IMAGE_NAME}" >> $GITHUB_ENV
+            echo "RUN_SERVICE_NAME=dev-${IMAGE_NAME}" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+            echo "PROJECT_ID=${GCP_PROJECT_ID}" >> $GITHUB_ENV
+            echo "GCP_SA_KEY=${{ secrets.GCP_SA_KEY }}"
+            echo "AR_REPO_NAME=prd-${IMAGE_NAME}" >> $GITHUB_ENV
+            echo "RUN_SERVICE_NAME=prd-${IMAGE_NAME}" >> $GITHUB_ENV
+          fi
+
+      - name: Create docker image path
+        run: |
+          echo "IMAGE_PATH=${ARTIFACT_REGISTRY_REGION}/${{ env.PROJECT_ID }}/${{ env.AR_REPO_NAME }}/${IMAGE_NAME}" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker ${ARTIFACT_REGISTRY_REGION}
+
+      - name: Build Docker image
+        run: |
+          docker build --build-arg="SOURCEFOLDER=${SOURCE_FOLDER_NAME}" -t ${{ env.IMAGE_PATH }}:${{ github.sha }} .
+          docker tag ${{ env.IMAGE_PATH }}:${{ github.sha }} ${{ env.IMAGE_PATH }}:latest
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ env.IMAGE_PATH }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_PATH }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.RUN_SERVICE_NAME }} \
+            --project=${{ env.PROJECT_ID }} \
+            --image=${{ env.IMAGE_PATH }}:${{ github.sha }} \
+            --region=${CLOUD_RUN_REGION} \

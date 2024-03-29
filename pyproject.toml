@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "lumieres-backend"
+name = "lumineres"
 version = "0.1.0"
 description = ""
 authors = ["ShinnosukeUesaka <shinnosuke.uesaka@gmail.com>"]
