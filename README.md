@@ -1,5 +1,9 @@
 # lumieres_backend
 
+## DEMO
+
+https://github.com/ShinnosukeUesaka/lumieres_backend/assets/45286939/5190e232-76ab-4c5b-8156-65624260790f
+
 ## Inspiration
 All of us watched tutorials on YouTube to learn concepts otherwise difficult to understand. But science tells us that watching a video is not enough. How many times have we watched a tutorial convinced that we had understood everything...and then the day after it is all gone. Don't worry, we have a solution for you. Interactive learning (doing not only watching) is the best way, according to recent neuroscientific research, to remember longer and understand deeper the topics studied.
 
@@ -19,7 +23,5 @@ Make it into a Chrome Extension
 ## Frontend
 https://github.com/tsengtinghan/lumieres
 
-## DEMO
 
-https://github.com/ShinnosukeUesaka/lumieres_backend/assets/45286939/5190e232-76ab-4c5b-8156-65624260790f
 
